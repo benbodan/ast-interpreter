@@ -10,12 +10,12 @@ function isNumber(exp) {
 }
 
 function isVariableName(exp) {
-    return typeof exp === 'string' && /^[a-zA-Z][a-zA-Z0-9_]*$/.test(exp);
+    return typeof exp === 'string' && /^[+\-*/<>=a-zA-Z0-9_]+$/.test(exp);
 }
 
 class Eva {
 
-    constructor(global = new Enviroment()) {
+    constructor(global = GlobalEnviroment) {
         this.global = global;
     }
 
@@ -27,43 +27,6 @@ class Eva {
 
         if (isString(exp)) {
             return exp.slice(1, -1);
-        }
-
-        if (exp[0] === '+') {
-            return this.eval(exp[1], env) + this.eval(exp[2], env);
-        }
-
-        if (exp[0] === '-') {
-            return this.eval(exp[1], env) - this.eval(exp[2], env);
-        }
-
-        if (exp[0] === '*') {
-            return this.eval(exp[1], env) * this.eval(exp[2], env);
-        }
-
-        if (exp[0] === '/') {
-            return this.eval(exp[1], env) / this.eval(exp[2], env);
-        }
-
-        if (exp[0] === '>') {
-            return this.eval(exp[1], env) > this.eval(exp[2], env);
-        }
-
-        if (exp[0] === '>=') {
-            return this.eval(exp[1], env) >= this.eval(exp[2], env);
-        }
-
-        if (exp[0] === '<') {
-            return this.eval(exp[1], env) < this.eval(exp[2], env);
-        }
-
-
-        if (exp[0] === '<=') {
-            return this.eval(exp[1], env) <= this.eval(exp[2], env);
-        }
-
-        if (exp[0] === '==') {
-            return this.eval(exp[1], env) == this.eval(exp[2], env);
         }
 
         // Block: sequence of expressions
@@ -104,9 +67,50 @@ class Eva {
             return result;
         }
 
+        if (exp[0] === 'def') {
+            const [_tag, name, params, body] = exp;
+
+            const fn = {
+                params,
+                body,
+                env
+            };
+
+            return env.define(name, fn);
+        }
+
+        if (Array.isArray(exp)) {
+            let fn = this.eval(exp[0], env);
+            const args = exp.slice(1).map(arg => this.eval(arg, env))
+
+            if (typeof fn === 'function') {
+                return fn(...args);
+            }
+
+            // User Defined Functions
+            const activationRecord = {};
+            fn.params.forEach((param, index) => {
+                activationRecord[param] = args[index];
+            });
+
+            const activationEnv = new Enviroment(
+                activationRecord,
+                fn.env
+            );
+
+            return this._evalBlock(fn.body, activationEnv);
+        }
+
         throw `Syntax Error "${exp}"`;
     }
 
+
+    _evalBody(body, env) {
+        if (body[0] === 'begin') {
+            return this._evalBlock(body, env);
+        }
+        return this.eval(body, env);
+    }
     _evalBlock(block, env) {
         let result;
         const [_tag, ...expressions] = block;
@@ -116,5 +120,54 @@ class Eva {
         return result;
     }
 }
+
+const GlobalEnviroment = new Enviroment({
+    null: null,
+    true: true,
+    false: false,
+    '+' (op1, op2) {
+        return op1 + op2
+    },
+    '++' (op1) {
+        return op1 + 1;
+    },
+    '-' (op1, op2) {
+        return op1 - op2
+    },
+    '*' (op1, op2) {
+        return op1 * op2
+    },
+    '/' (op1, op2) {
+        return op1 / op2
+    },
+    '-' (op1, op2 = null) {
+        if (op2 == null) {
+            return -op1;
+        }
+        return op1 - op2
+    },
+    // Comparison Operators
+    '==' (op1, op2) {
+        return op1 == op2
+    },
+    '!=' (op1, op2) {
+        return op1 != op2
+    },
+    '<' (op1, op2) {
+        return op1 < op2
+    },
+    '<=' (op1, op2) {
+        return op1 <= op2
+    },
+    '>' (op1, op2) {
+        return op1 > op2
+    },
+    '>=' (op1, op2) {
+        return op1 >= op2
+    },
+    'print' (...args) {
+        console.log(...args);
+    }
+});
 
 module.exports = Eva;

@@ -8,13 +8,11 @@ const tests = [
     require('./block-test'),
     require('./if-test'),
     require('./while-test'),
+    require('./built-in-functions-test'),
+    require('./user-defined-functions-test'),
 ];
 
-const eva = new Eva(new Enviroment({
-    null: null,
-    true: true,
-    false: false,
-}));
+const eva = new Eva();
 
 tests.forEach(test => test(eva))
 
