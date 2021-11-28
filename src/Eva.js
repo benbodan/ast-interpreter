@@ -32,7 +32,15 @@ class Eva {
         }
 
         if (exp[0] === 'set') {
-            return env.assign(exp[1], this.eval(exp[2], env));
+            const [_t, ref, value] = exp;
+
+            if (ref[0] === 'prop') {
+                const [_tag, instance, propName] = ref;
+                const instanceEnv = this.eval(instance, env);
+                return instanceEnv.define(propName, this.eval(value, env))
+            }
+
+            return env.assign(ref, this.eval(value, env));
         }
 
         if (exp[0] === 'if') {
@@ -93,6 +101,37 @@ class Eva {
             }
         }
 
+        if (exp[0] === 'class') {
+            const [_tag, name, parent, body] = exp;
+
+            const parentEnv = this.eval(parent, env) || env;
+            const classEnv = new Enviroment({}, parentEnv);
+
+
+            this._evalBody(body, classEnv);
+            return env.define(name, classEnv);
+        }
+
+        if (exp[0] === 'new') {
+            let [_tag, name, ...args] = exp;
+
+            const classEnv = this.eval(name, env);
+            const instanceEnv = new Enviroment({}, classEnv);
+            args = args.map(arg => this.eval(arg, env));
+
+            this.callUserDefinedFunction(
+                classEnv.lookup('constructor'), [instanceEnv, ...args]
+            );
+
+            return instanceEnv;
+        }
+
+        if (exp[0] === 'prop') {
+            const [_tag, instance, name] = exp;
+            const instanceEnv = this.eval(instance, env);
+            return instanceEnv.lookup(name);
+        }
+
         if (Array.isArray(exp)) {
             let fn = this.eval(exp[0], env);
             const args = exp.slice(1).map(arg => this.eval(arg, env))
@@ -101,22 +140,25 @@ class Eva {
                 return fn(...args);
             }
 
-            // Eval User Defined Functions
-            const activationRecord = {};
-
-            fn.params.forEach((param, index) => {
-                activationRecord[param] = args[index];
-            });
-
-            const activationEnv = new Enviroment(
-                activationRecord,
-                fn.env
-            );
-
-            return this._evalBody(fn.body, activationEnv);
+            return this.callUserDefinedFunction(fn, args);
         }
 
         throw `Syntax Error "${exp}"`;
+    }
+
+    callUserDefinedFunction(fn, args) {
+        const activationRecord = {};
+
+        fn.params.forEach((param, index) => {
+            activationRecord[param] = args[index];
+        });
+
+        const activationEnv = new Enviroment(
+            activationRecord,
+            fn.env
+        );
+
+        return this._evalBody(fn.body, activationEnv);
     }
 
 
@@ -158,7 +200,6 @@ const GlobalEnviroment = new Enviroment({
         }
         return op1 - op2
     },
-    // Comparison Operators
     '=' (op1, op2) {
         return op1 === op2
     },
