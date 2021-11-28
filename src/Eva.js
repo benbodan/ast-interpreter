@@ -49,6 +49,11 @@ class Eva {
             return this.eval(switchExp, env);
         }
 
+        if (exp[0] === 'for') {
+            const forExp = this.transformer.forToWhile(exp);
+            return this.eval(forExp, env);
+        }
+
         if (isVariableName(exp)) {
             return env.lookup(exp);
         }
@@ -66,6 +71,16 @@ class Eva {
         if (exp[0] === 'def') {
             const lExp = this.transformer.defToLambda(exp);
             return this.eval(lExp, env);
+        }
+
+        if (exp[0] === '++') {
+            const setExp = this.transformer.transformIncToSet(exp);
+            return this.eval(setExp, env);
+        }
+
+        if (exp[0] === '--') {
+            const setExp = this.transformer.transformDecToSet(exp);
+            return this.eval(setExp, env);
         }
 
         if (exp[0] === 'lambda') {
@@ -127,9 +142,6 @@ const GlobalEnviroment = new Enviroment({
     false: false,
     '+' (op1, op2) {
         return op1 + op2
-    },
-    '++' (op1) {
-        return op1 + 1;
     },
     '-' (op1, op2) {
         return op1 - op2

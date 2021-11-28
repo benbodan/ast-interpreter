@@ -14,6 +14,7 @@ const tests = [
     require('./recursive-functions-test'),
     require('./operators-test'),
     require('./switch-test'),
+    require('./for-loop-test')
 ];
 
 const eva = new Eva();

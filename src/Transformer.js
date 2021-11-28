@@ -8,8 +8,34 @@ class Transformer {
         return ['var', name, ['lambda', params, body]];
     }
 
+    forToWhile(exp) {
+        let [_tag, init, condition, modifier, body] = exp;
+        let exps = ['begin'];
+
+
+        if (body[0] === 'begin') {
+            body.push(modifier);
+        } else {
+            body = ['begin', body, modifier]
+        }
+
+        exps.push(init);
+        exps.push(['while', condition, body])
+
+        return exps;
+    }
+
+    transformIncToSet(exp) {
+        const [_tag, name] = exp;
+        return ['set', name, ['+', name, 1]];
+    }
+
+    transformDecToSet(exp) {
+        const [_tag, name] = exp;
+        return ['set', name, ['-', name, 1]];
+    }
+
     switchToIf(exp) {
-        // (if (= x 10) (true) (false))
         const [_tag, ...cases] = exp;
         const ifExp = ['if', null, null, null];
 
