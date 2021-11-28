@@ -70,13 +70,19 @@ class Eva {
         if (exp[0] === 'def') {
             const [_tag, name, params, body] = exp;
 
-            const fn = {
+            // JIT transpile to lamda function
+            const lExp = ['var', name, ['lambda', params, body]];
+            return this.eval(lExp, env);
+        }
+
+        if (exp[0] === 'lambda') {
+            const [_tag, params, body] = exp;
+
+            return {
                 params,
                 body,
                 env
-            };
-
-            return env.define(name, fn);
+            }
         }
 
         if (Array.isArray(exp)) {
@@ -87,8 +93,9 @@ class Eva {
                 return fn(...args);
             }
 
-            // User Defined Functions
+            // Eval User Defined Functions
             const activationRecord = {};
+
             fn.params.forEach((param, index) => {
                 activationRecord[param] = args[index];
             });
@@ -98,7 +105,7 @@ class Eva {
                 fn.env
             );
 
-            return this._evalBlock(fn.body, activationEnv);
+            return this._evalBody(fn.body, activationEnv);
         }
 
         throw `Syntax Error "${exp}"`;
@@ -147,7 +154,7 @@ const GlobalEnviroment = new Enviroment({
         return op1 - op2
     },
     // Comparison Operators
-    '==' (op1, op2) {
+    '=' (op1, op2) {
         return op1 == op2
     },
     '!=' (op1, op2) {
