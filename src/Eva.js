@@ -1,22 +1,13 @@
 const assert = require('assert');
 const Enviroment = require('./Enviroment');
-
-function isString(exp) {
-    return typeof exp === 'string' && exp[0] === '"' && exp.slice(-1) === '"';
-}
-
-function isNumber(exp) {
-    return typeof exp === 'number';
-}
-
-function isVariableName(exp) {
-    return typeof exp === 'string' && /^[+\-*/<>=a-zA-Z0-9_]+$/.test(exp);
-}
+const Transformer = require('./Transformer');
+const { isNumber, isString, isVariableName } = require('./Utils');
 
 class Eva {
 
     constructor(global = GlobalEnviroment) {
         this.global = global;
+        this.transformer = new Transformer();
     }
 
     eval(exp, env = this.global) {
@@ -53,6 +44,11 @@ class Eva {
             return this.eval(exp_false, env);
         }
 
+        if (exp[0] === 'switch') {
+            const switchExp = this.transformer.switchToIf(exp);
+            return this.eval(switchExp, env);
+        }
+
         if (isVariableName(exp)) {
             return env.lookup(exp);
         }
@@ -68,10 +64,7 @@ class Eva {
         }
 
         if (exp[0] === 'def') {
-            const [_tag, name, params, body] = exp;
-
-            // JIT transpile to lamda function
-            const lExp = ['var', name, ['lambda', params, body]];
+            const lExp = this.transformer.defToLambda(exp);
             return this.eval(lExp, env);
         }
 
@@ -155,7 +148,7 @@ const GlobalEnviroment = new Enviroment({
     },
     // Comparison Operators
     '=' (op1, op2) {
-        return op1 == op2
+        return op1 === op2
     },
     '!=' (op1, op2) {
         return op1 != op2

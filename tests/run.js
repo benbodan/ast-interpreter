@@ -11,7 +11,9 @@ const tests = [
     require('./built-in-functions-test'),
     require('./user-defined-functions-test'),
     require('./lambda-functions-test'),
-    require('./recursive-functions-test')
+    require('./recursive-functions-test'),
+    require('./operators-test'),
+    require('./switch-test'),
 ];
 
 const eva = new Eva();

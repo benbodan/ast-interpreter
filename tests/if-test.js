@@ -18,7 +18,6 @@ module.exports = eva => {
         31
     );
 
-
     testUtil.test(eva,
         `(begin
             (var x 10)
@@ -34,4 +33,11 @@ module.exports = eva => {
         )`,
         2
     );
+
+    testUtil.test(eva, `
+        (begin
+            (var x 10)
+            (if (= x 10) 100 (if (> x 10) 200 0))    
+        )
+    `, 100);
 };
