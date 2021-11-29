@@ -2,12 +2,15 @@ const assert = require('assert');
 const Enviroment = require('./Enviroment');
 const Transformer = require('./Transformer');
 const { isNumber, isString, isVariableName } = require('./Utils');
+const evaParser = require('./parser/evaParser');
+const fs = require('fs');
 
 class Eva {
 
-    constructor(global = GlobalEnviroment) {
+    constructor(rootFolder = __dirname, global = GlobalEnviroment) {
         this.global = global;
         this.transformer = new Transformer();
+        this.rootFolder = rootFolder;
     }
 
     eval(exp, env = this.global) {
@@ -134,6 +137,23 @@ class Eva {
             const [_tag, instance, name] = exp;
             const instanceEnv = this.eval(instance, env);
             return instanceEnv.lookup(name);
+        }
+
+        if (exp[0] === 'module') {
+            const [_tag, name, body] = exp;
+            const moduleEnv = new Enviroment({}, env);
+            this._evalBody(body, moduleEnv);
+            return env.define(name, moduleEnv);
+        }
+
+        if (exp[0] === 'import') {
+            const [_tag, name, src] = exp;
+            const moduleSrc = fs.readFileSync(`${this.rootFolder}/${src.slice(1, -1)}`, 'utf-8');
+
+            const body = evaParser.parse(`(begin ${moduleSrc})`);
+            const moduleExp = ['module', name, body];
+
+            return this.eval(moduleExp, this.global);
         }
 
         if (Array.isArray(exp)) {
