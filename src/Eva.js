@@ -107,9 +107,13 @@ class Eva {
             const parentEnv = this.eval(parent, env) || env;
             const classEnv = new Enviroment({}, parentEnv);
 
-
             this._evalBody(body, classEnv);
             return env.define(name, classEnv);
+        }
+
+        if (exp[0] === 'super') {
+            const [_tag, className] = exp;
+            return this.eval(className, env).parent;
         }
 
         if (exp[0] === 'new') {
