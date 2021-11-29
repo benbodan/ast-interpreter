@@ -15,10 +15,11 @@ const tests = [
     require('./operators-test'),
     require('./switch-test'),
     require('./for-loop-test'),
-    require('./class-test')
+    require('./class-test'),
+    require('./module-test'),
 ];
 
-const eva = new Eva();
+const eva = new Eva(__dirname);
 
 tests.forEach(test => test(eva))
 

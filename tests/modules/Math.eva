@@ -1,0 +1,4 @@
+
+(def abs (value)
+    (if (< value 0) (- value) value)
+)
